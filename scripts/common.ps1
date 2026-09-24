@@ -3,6 +3,9 @@ $script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $env:UV_CACHE_DIR = Join-Path $script:RepoRoot '.local\uv-cache'
 $env:UV_PYTHON_INSTALL_DIR = Join-Path $script:RepoRoot '.local\python'
 $env:PIP_CACHE_DIR = Join-Path $script:RepoRoot '.local\pip-cache'
+$env:PIPX_HOME = Join-Path $script:RepoRoot '.local\servers\pipx'
+$env:PIPX_BIN_DIR = Join-Path $script:RepoRoot '.local\bin'
+$env:PIPX_MAN_DIR = Join-Path $script:RepoRoot '.local\share\man'
 
 function Invoke-Checked {
     param([string]$Exe, [string[]]$Arguments)
