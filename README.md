@@ -47,7 +47,7 @@ powershell -ExecutionPolicy Bypass -File .\sync.ps1 push -Message "Add a new MCP
 powershell -ExecutionPolicy Bypass -File .\sync.ps1 pull
 ```
 
-它会 `git pull --ff-only`，准备依赖并合并配置。存在未上传的本机修改时先停止，请先 push。本机和远端都已提交而分叉时，执行 `git fetch`、`git merge origin/main`，解决 `config.toml/settings.json` 冲突后 `git push`，再运行 `setup.ps1`。脚本不会强推或自动选择冲突一方。
+它会 `git pull --ff-only`，准备依赖并合并配置。存在未上传的本机修改时先停止，请先 push。本机和远端都已提交而分叉时，执行 `git fetch`、`git merge origin/master`，解决 `config.toml/settings.json` 冲突后 `git push`，再运行 `setup.ps1`。脚本不会强推或自动选择冲突一方。
 
 ### 辅助命令
 
