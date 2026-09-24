@@ -11,7 +11,10 @@
       "python": "3.12",
       "packages": ["semgrep==1.178.0"],
       "command": "${ROOT}/.local/servers/semgrep/Scripts/semgrep.exe",
-      "args": ["mcp"]
+      "args": ["mcp"],
+      "install": [
+        ["${ROOT}/.local/servers/semgrep/Scripts/python.exe", "${ROOT}/scripts/patch_semgrep_timeout.py"]
+      ]
     }
   }
 }

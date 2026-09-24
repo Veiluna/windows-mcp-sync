@@ -28,3 +28,4 @@ args = ["shadcn@latest", "mcp"]
 enabled = true
 command = "${ROOT}/.local/servers/semgrep/Scripts/semgrep.exe"
 args = ["mcp"]
+startup_timeout_sec = 60

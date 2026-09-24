@@ -67,7 +67,11 @@ powershell -ExecutionPolicy Bypass -File .\sync.ps1 pull
 
 `node_repl` 被 `settings.json` 的 exclude 排除，因为它是 Codex 桌面生成的本机运行时配置。插件附带的 MCP、Skills、Codex 登录态不属于此仓库的同步范围；各电脑通过 Codex 安装/登录对应插件。
 
-初始检查发现原电脑的 Semgrep 运行时报 `CertOpenSystemStore returned NULL`。独立安装不会保证修复操作系统证书访问问题，需要在正常用户终端验证 `semgrep mcp`。此问题不应误认为 Git 同步故障。
+Semgrep 1.178.0 的 OAuth 元数据请求使用 2 秒连接超时，代理/TLS 握手较慢时会使 `semgrep mcp` 启动失败。安装 recipe 会执行 `scripts/patch_semgrep_timeout.py`，将这一处连接超时改为 15 秒（读取超时保持 30 秒），保留认证和 TLS 校验；Codex 的启动等待设置为 60 秒。补丁检查版本和原始源码，首次修改旁存 `utils.py.before-mcp-timeout-fix.bak`，重复执行不重复修改。升级 Semgrep 后需重新评估此补丁。
+
+修复后的独立环境已通过 MCP initialize 与 tools/list，返回 7 个工具。若原先通过 pipx 安装，也可使用该环境的 Python 执行同一补丁脚本。安装或升级软件可能覆盖补丁，之后重新运行 setup 即可恢复仓库固定版本的修复。
+
+本任务的受限沙箱中，原生 `semgrep.exe` 还曾报 `CertOpenSystemStore returned NULL`；握手验证使用同环境官方 `pysemgrep.exe` 入口完成。这个沙箱证书访问问题与终端日志里的 OAuth 超时不同；工具枚举通过也不代表所有扫描或云端功能都已验证。
 
 ## 新增本地服务器
 
