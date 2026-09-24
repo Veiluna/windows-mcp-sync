@@ -44,7 +44,9 @@ function Initialize-SyncPython {
         }
         Invoke-Checked $pythonCommand @('-m', 'venv', (Join-Path $script:RepoRoot '.venv'))
     }
-    $hash = (Get-FileHash (Join-Path $script:RepoRoot 'requirements.txt') -Algorithm SHA256).Hash
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { $hash = [BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes((Join-Path $script:RepoRoot 'requirements.txt')))).Replace('-', '') }
+    finally { $sha.Dispose() }
     $stamp = Join-Path $script:RepoRoot '.venv\requirements.sha256'
     if (-not (Test-Path $stamp) -or (Get-Content $stamp -Raw).Trim() -ne $hash) {
         Invoke-Checked $venvPython @('-m', 'pip', 'install', '-r', (Join-Path $script:RepoRoot 'requirements.txt'))
@@ -60,4 +62,17 @@ function Invoke-SyncPython([string[]]$Arguments) {
 function Set-GitHubProcessCredential {
     # Process-scoped only; never store tokens in Git remote URLs or command arguments.
     if (-not $env:GH_TOKEN -and $env:GITHUB_PAT_TOKEN) { $env:GH_TOKEN = $env:GITHUB_PAT_TOKEN }
+    if ($env:GH_TOKEN) {
+        $count = 0
+        if ($env:GIT_CONFIG_COUNT) { $count = [int]$env:GIT_CONFIG_COUNT }
+        $slot = $count
+        $key = 'http.https://github.com/.extraheader'
+        for ($i = 0; $i -lt $count; $i++) {
+            if ([Environment]::GetEnvironmentVariable("GIT_CONFIG_KEY_$i", 'Process') -eq $key) { $slot = $i; break }
+        }
+        $basic = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('x-access-token:' + $env:GH_TOKEN))
+        [Environment]::SetEnvironmentVariable("GIT_CONFIG_KEY_$slot", $key, 'Process')
+        [Environment]::SetEnvironmentVariable("GIT_CONFIG_VALUE_$slot", ('Authorization: Basic ' + $basic), 'Process')
+        if ($slot -eq $count) { $env:GIT_CONFIG_COUNT = [string]($count + 1) }
+    }
 }

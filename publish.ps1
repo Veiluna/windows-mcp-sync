@@ -13,5 +13,5 @@ Invoke-Checked git @('-C', $PSScriptRoot, 'add', '--', 'config.toml', 'settings.
 if ($LASTEXITCODE -eq 1) { Invoke-Checked git @('-C', $PSScriptRoot, 'commit', '-m', 'Add portable Windows MCP configuration and setup') }
 elseif ($LASTEXITCODE -ne 0) { throw 'Could not inspect staged changes.' }
 Invoke-Checked gh @('repo', 'create', $Name, '--private', '--source', $PSScriptRoot, '--remote', 'origin')
-Invoke-Checked git @('-C', $PSScriptRoot, '-c', 'credential.helper=', '-c', 'credential.helper=!gh auth git-credential', 'push', '-u', 'origin', 'main')
+Invoke-Checked git @('-C', $PSScriptRoot, 'push', '-u', 'origin', 'main')
 Invoke-Checked gh @('repo', 'view', $Name, '--json', 'url,isPrivate', '--jq', '{url,isPrivate}')

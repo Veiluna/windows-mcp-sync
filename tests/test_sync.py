@@ -137,6 +137,13 @@ REGION = "china"
         sync.apply_config(self.root, self.target)
         self.assertIn('r', sync.read_toml(self.target)['mcp_servers'])
 
+    def test_target_state_is_separate(self):
+        self.write_shared({'r': {'url': 'https://example.com'}})
+        sync.apply_config(self.root, self.target)
+        other = self.target.with_name('other.toml')
+        sync.apply_config(self.root, other)
+        self.assertNotEqual(sync.state_path(self.root, self.target), sync.state_path(self.root, other))
+
 
 if __name__ == '__main__':
     unittest.main()

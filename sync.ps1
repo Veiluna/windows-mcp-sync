@@ -14,9 +14,7 @@ if ($Action -eq 'export') { Invoke-SyncPython (@('export') + $arguments); return
 if (-not (Test-Path (Join-Path $PSScriptRoot '.git'))) { throw 'This folder is not an initialized Git repository.' }
 Set-GitHubProcessCredential
 $gitArguments = @('-C', $PSScriptRoot)
-if ($env:GH_TOKEN -and (Get-Command gh.exe -ErrorAction SilentlyContinue)) {
-    $gitArguments += @('-c', 'credential.helper=', '-c', 'credential.helper=!gh auth git-credential')
-}
+if ($env:GH_TOKEN) { $gitArguments += @('-c', 'credential.helper=') }
 if ($Action -eq 'push') {
     Invoke-SyncPython (@('export') + $arguments)
     Invoke-SyncPython (@('check') + $arguments)
