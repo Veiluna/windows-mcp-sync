@@ -26,6 +26,6 @@ args = ["shadcn@latest", "mcp"]
 
 [mcp_servers.semgrep]
 enabled = true
-command = "${ROOT}/.local/servers/semgrep/Scripts/semgrep.exe"
+command = "${PIPX_BIN}/semgrep.exe"
 args = ["mcp"]
 startup_timeout_sec = 60

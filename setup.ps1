@@ -23,3 +23,6 @@ if (-not $SkipInstall) {
 if (-not $NonInteractive) { $arguments += '--interactive' }
 if ($Force) { $arguments += '--force' }
 Invoke-SyncPython (@('apply') + $arguments)
+
+# pipx ensurepath updates the user PATH; refresh this PowerShell process too.
+Update-ProcessPath

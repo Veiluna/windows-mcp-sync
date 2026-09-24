@@ -75,6 +75,10 @@ def expand(value, root, target):
     def sub(text):
         def replace(match):
             key = match[1]
+            if key in ('PIPX_BIN', 'PIPX_VENVS'):
+                setting = 'PIPX_BIN_DIR' if key == 'PIPX_BIN' else 'PIPX_LOCAL_VENVS'
+                if key not in values:
+                    values[key] = str(pipx_path(setting)).replace('\\', '/')
             if key in values:
                 return values[key]
             if key.startswith("ENV:") and os.getenv(key[4:]):
@@ -189,18 +193,105 @@ def run(argv, cwd):
     subprocess.run(argv, cwd=cwd, check=True)
 
 
+def pipx_path(setting):
+    result = subprocess.check_output(
+        [sys.executable, '-m', 'pipx', 'environment', '--value', setting], text=True)
+    return Path(result.strip())
+
+
+def install_pipx(name, recipe, root):
+    package = recipe['package']
+    # A fixed version is needed because the Semgrep source patch is version-specific.
+    package_name, separator, version = package.partition('==')
+    if not separator or package_name != name or not version:
+        raise ValueError(f'{name}: pipx recipe requires package=name==version')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]*', name):
+        raise ValueError('Invalid pipx environment name')
+    required_python = recipe.get('python', '3.14.7')
+    venvs = pipx_path('PIPX_LOCAL_VENVS').resolve()
+    folder = venvs / name
+    if folder.resolve() != folder:
+        raise ValueError(f'{name}: pipx environment is a link outside its expected location')
+    python = folder / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+    metadata_path = folder / 'pipx_metadata.json'
+    prefix = [sys.executable, '-m', 'pipx']
+    metadata = {}
+    actual_python = None
+    try:
+        metadata = read_json(metadata_path, {})
+        if metadata.get('main_package', {}).get('package_version') and (folder / 'pyvenv.cfg').is_file() and python.is_file():
+            actual_python = subprocess.check_output(
+                [str(python), '-c', 'import sys; print(chr(46).join(map(str, sys.version_info[:3])))'],
+                text=True, stderr=subprocess.PIPE, timeout=20).strip()
+    except (OSError, ValueError, subprocess.SubprocessError):
+        actual_python = None
+    if actual_python is None and folder.exists() and any(folder.iterdir()):
+        backup_root = venvs.parent / 'mcp-sync-backups'
+        if not backup_root.resolve().is_relative_to(venvs.parent):
+            raise ValueError('Backup directory must remain inside pipx home')
+        backup_root.mkdir(parents=True, exist_ok=True)
+        backup = backup_root / (name + '-' + dt.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+        if backup.resolve().parent != backup_root.resolve():
+            raise ValueError('Invalid pipx backup destination')
+        folder.rename(backup)
+        print(f'{name}: incomplete/broken pipx environment preserved at {backup}; installing Python {required_python}.')
+    if actual_python is not None:
+        if actual_python != required_python:
+            print(f'{name}: recreating pipx environment with Python {required_python}; '
+                  're-run install-semgrep-pro afterwards if you use the Pro engine.')
+            run(prefix + ['reinstall', '--python', required_python,
+                          '--fetch-python=missing', name], root)
+        metadata = read_json(metadata_path, {})
+        if metadata.get('main_package', {}).get('package_version') != version:
+            run(prefix + ['install', '--force', package], root)
+    else:
+        run(prefix + ['install', '--python', required_python,
+                      '--fetch-python=missing', package], root)
+    actual_python = subprocess.check_output(
+        [str(python), '-c', 'import sys; print(chr(46).join(map(str, sys.version_info[:3])))'],
+        text=True).strip()
+    metadata = read_json(metadata_path, {})
+    if actual_python != required_python or metadata.get('main_package', {}).get('package_version') != version:
+        raise ValueError(f'{name}: pipx installation does not match the requested Python/package version')
+    run(prefix + ['ensurepath'], root)
+    print(f'{name}: pipx Python {actual_python}; executable: {pipx_path("PIPX_BIN_DIR") / (name + ".exe")}')
+
+
 def install_recipes(root, target, shared):
     settings = read_json(root / "settings.json", {})
     uv = expand("${UV}", root, target)
     for name, recipe in settings.get("recipes", {}).items():
         if name not in shared or shared[name].get("enabled", True) is False:
             continue
-        if recipe.get("packages"):
+        installer = recipe.get('installer', 'venv')
+        if installer not in ('venv', 'pipx'):
+            raise ValueError(f'{name}: unknown installer {installer}')
+        if installer == 'pipx':
+            install_pipx(name, recipe, root)
+        elif recipe.get("packages"):
             folder = root / ".local/servers" / name
             python = folder / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-            if not python.exists():
-                run([uv, "venv", "--python", recipe.get("python", "3.12"), str(folder)], root)
+            required_python = recipe.get("python", "3.14.7")
+            version_command = [str(python), "-c", "import platform; print(platform.python_version())"]
+            actual_python = None
+            if python.exists():
+                try:
+                    actual_python = subprocess.check_output(version_command, text=True, stderr=subprocess.PIPE, timeout=20).strip()
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            if actual_python != required_python:
+                if folder.exists():
+                    if folder.resolve().parent != (root / ".local/servers").resolve():
+                        raise ValueError("Server environment must remain inside .local/servers")
+                    backup = folder.with_name(folder.name + "-backup-" + dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f"))
+                    folder.rename(backup)
+                    print(f"{name}: old environment preserved at {backup}")
+                run([uv, "venv", "--python", required_python, str(folder)], root)
             run([uv, "pip", "install", "--python", str(python), *recipe["packages"]], root)
+            actual_python = subprocess.check_output(version_command, text=True).strip()
+            if actual_python != required_python:
+                raise ValueError(f"{name}: expected Python {required_python}, got {actual_python}")
+            print(f"{name}: Python {actual_python}; executable: {python}")
         for command in recipe.get("install", []):
             run(expand(command, root, target), root)
 

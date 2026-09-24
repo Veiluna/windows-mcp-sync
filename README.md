@@ -19,7 +19,7 @@ cd windows-mcp-sync
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
 
-脚本会检查 Python 3.11+；缺失时通过 winget 安装 Python 3.12。需要 npx 的配置会检查并安装 Node.js LTS。脚本自己的 `tomlkit`、`uv` 放在 `.venv`，MarkItDown/Semgrep 使用各自的 Python 3.12 环境。uv 会在需要时下载 Python；首次安装需联网。无需复制原电脑的 Python 目录。
+脚本会检查 Python 3.11+；缺失时通过 winget 安装 Python 3.12。需要 npx 的配置会检查并安装 Node.js LTS。脚本自己的 `tomlkit`、`uv`、`pipx` 放在 `.venv`。MarkItDown 使用独立 Python 3.14.7 环境；Semgrep 改用官方 pipx 安装，指定 Python 3.14.7，缺失时由 pipx 下载。首次安装需联网。pipx 按官方默认规则选择安装后端；本脚本自带 uv，可用于加快依赖安装，环境与命令入口仍由 pipx 管理。
 
 首次配置会提示输入缺失的凭证（输入隐藏）。Context7 的 `MCP_CONTEXT7_AUTHORIZATION` 要输入完整的 `Bearer <token>`；`GITHUB_PAT_TOKEN` 输入 token 本身。也可提前设置当前进程或用户环境变量。凭证只保存在本机 `.local/secrets.json` 和生成的 Codex 配置中，不上传。OAuth 服务须在每台电脑分别执行 `codex mcp login <名称>`。
 
@@ -62,8 +62,8 @@ powershell -ExecutionPolicy Bypass -File .\sync.ps1 pull
 | GitHub | 远程 HTTP；设备本地 PAT |
 | EdgeOne Pages/Makers | Node.js + npx；首次启动下载 npm 包，服务登录单独完成 |
 | shadcn | Node.js + npx；首次启动下载 npm 包 |
-| MarkItDown | 独立 Python 3.12 + markitdown-mcp==0.0.1a7 |
-| Semgrep | 独立 Python 3.12 + semgrep==1.178.0 |
+| MarkItDown | 独立 Python 3.14.7 + markitdown-mcp==0.0.1a7 |
+| Semgrep | pipx 用户级安装 + Python 3.14.7 + semgrep==1.178.0 |
 
 `node_repl` 被 `settings.json` 的 exclude 排除，因为它是 Codex 桌面生成的本机运行时配置。插件附带的 MCP、Skills、Codex 登录态不属于此仓库的同步范围；各电脑通过 Codex 安装/登录对应插件。
 
@@ -72,6 +72,35 @@ Semgrep 1.178.0 的 OAuth 元数据请求使用 2 秒连接超时，代理/TLS �
 修复后的独立环境已通过 MCP initialize 与 tools/list，返回 7 个工具。若原先通过 pipx 安装，也可使用该环境的 Python 执行同一补丁脚本。安装或升级软件可能覆盖补丁，之后重新运行 setup 即可恢复仓库固定版本的修复。
 
 本任务的受限沙箱中，原生 `semgrep.exe` 还曾报 `CertOpenSystemStore returned NULL`；握手验证使用同环境官方 `pysemgrep.exe` 入口完成。这个沙箱证书访问问题与终端日志里的 OAuth 超时不同；工具枚举通过也不代表所有扫描或云端功能都已验证。
+
+## Semgrep：pipx、登录与 Pro 引擎
+
+运行 `powershell -ExecutionPolicy Bypass -File .\setup.ps1`，然后重新打开终端：
+
+```powershell
+semgrep --version
+semgrep login
+semgrep install-semgrep-pro
+```
+
+这是完整的官方 Semgrep CLI，可以登录并安装 Pro 引擎；Pro 功能取决于账号权限。setup 不自动登录或下载 Pro 引擎，登录信息不随 Git 同步。
+
+Codex 和终端使用同一个 pipx 安装。`${PIPX_BIN}`、`${PIPX_VENVS}` 通过 `pipx environment --value` 获取，支持自定义 `PIPX_HOME` / `PIPX_BIN_DIR`。默认 Windows 命令入口通常是 `%USERPROFILE%/.local/bin/semgrep.exe`。
+
+如果 pipx 只残留目录、缺少 `pyvenv.cfg` / 元数据，或解释器无法启动，setup 会先将该目录移动到 pipx 主目录下的 `mcp-sync-backups` 保存，再重新安装；不会仅凭目录存在判断安装成功。
+
+已是 Python 3.14.7 + Semgrep 1.178.0 时不会重装，保留环境里的 Pro 引擎。Python 版本不同时执行 pipx reinstall；包版本不同时安装仓库指定版本。重建环境后需重新执行 `semgrep install-semgrep-pro`。原来的 `.local/servers/semgrep` 不再用于新配置，也不会自动删除。
+
+脚本自带的 pipx 可这样管理：
+
+```powershell
+.\.venv\Scripts\python.exe -m pipx list
+.\.venv\Scripts\python.exe -m pipx environment
+```
+
+所有 Python MCP（MarkItDown、Semgrep）均锁定 Python 3.14.7，检查包含补丁号。MarkItDown 旧环境会先备份再重建；EdgeOne 和 shadcn 是 Node.js 程序，继续使用 Node.js。升级 Semgrep 时需一起更新 `settings.json` 和版本相关的超时补丁。
+
+参考：[Semgrep Windows 安装](https://semgrep.dev/docs/getting-started/quickstart)、[pipx 命令参考](https://pipx.pypa.io/stable/reference/cli.html)。
 
 ## 新增本地服务器
 
@@ -89,7 +118,7 @@ args = ["${ROOT}/servers/demo/server.py"]
 
 ```json
 "demo": {
-  "python": "3.12",
+  "python": "3.14.7",
   "packages": ["mcp>=1,<2"],
   "command": "${ROOT}/.local/servers/demo/Scripts/python.exe",
   "args": ["${ROOT}/servers/demo/server.py"]
