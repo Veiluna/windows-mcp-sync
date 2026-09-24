@@ -1,0 +1,17 @@
+{
+  "exclude": ["node_repl"],
+  "recipes": {
+    "markitdown": {
+      "python": "3.12",
+      "packages": ["markitdown-mcp==0.0.1a7"],
+      "command": "${ROOT}/.local/servers/markitdown/Scripts/python.exe",
+      "args": ["-m", "markitdown_mcp"]
+    },
+    "semgrep": {
+      "python": "3.12",
+      "packages": ["semgrep==1.178.0"],
+      "command": "${ROOT}/.local/servers/semgrep/Scripts/semgrep.exe",
+      "args": ["mcp"]
+    }
+  }
+}

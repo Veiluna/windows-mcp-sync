@@ -1,0 +1,30 @@
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+
+[mcp_servers.context7.env_http_headers]
+Authorization = "MCP_CONTEXT7_AUTHORIZATION"
+
+[mcp_servers.markitdown]
+command = "${ROOT}/.local/servers/markitdown/Scripts/python.exe"
+args = ["-m", "markitdown_mcp"]
+
+[mcp_servers.edgeone-pages]
+command = "npx"
+args = ["-y", "@edgeone/makers-mcp@latest", "--region", "china"]
+startup_timeout_sec = 60.0
+tool_timeout_sec = 600.0
+
+[mcp_servers.github]
+enabled = true
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PAT_TOKEN"
+
+[mcp_servers.shadcn]
+enabled = true
+command = "npx"
+args = ["shadcn@latest", "mcp"]
+
+[mcp_servers.semgrep]
+enabled = true
+command = "${ROOT}/.local/servers/semgrep/Scripts/semgrep.exe"
+args = ["mcp"]
