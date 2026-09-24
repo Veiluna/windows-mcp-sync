@@ -382,6 +382,9 @@ def main():
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
     root, target = args.root.resolve(), args.target.resolve()
+    os.environ["PIPX_HOME"] = str(root / ".local/servers/pipx")
+    os.environ["PIPX_BIN_DIR"] = str(root / ".local/bin")
+    os.environ["PIPX_MAN_DIR"] = str(root / ".local/share/man")
     if args.action != 'export' and not (root / 'config.toml').exists():
         raise ValueError('Shared config.toml does not exist; export it first')
     if args.action == "export":
