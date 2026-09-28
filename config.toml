@@ -8,6 +8,12 @@ Authorization = "MCP_CONTEXT7_AUTHORIZATION"
 command = "${ROOT}/.local/servers/markitdown/Scripts/python.exe"
 args = ["-m", "markitdown_mcp"]
 
+[mcp_servers.google-scholar]
+command = "${ROOT}/.local/servers/markitdown/Scripts/python.exe"
+args = ["${ROOT}/.local/sources/google-scholar/google_scholar_server.py"]
+startup_timeout_sec = 60
+tool_timeout_sec = 120
+
 [mcp_servers.edgeone-pages]
 command = "npx"
 args = ["-y", "@edgeone/makers-mcp@latest", "--region", "china"]

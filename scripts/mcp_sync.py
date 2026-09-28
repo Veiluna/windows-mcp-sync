@@ -269,7 +269,7 @@ def install_recipes(root, target, shared):
         if installer == 'pipx':
             install_pipx(name, recipe, root)
         elif recipe.get("packages"):
-            folder = root / ".local/servers" / name
+            folder = root / ".local/servers" / recipe.get("venv", name)
             python = folder / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
             required_python = recipe.get("python", "3.14.7")
             version_command = [str(python), "-c", "import platform; print(platform.python_version())"]
