@@ -35,3 +35,25 @@ enabled = true
 command = "${PIPX_BIN}/semgrep.exe"
 args = ["mcp"]
 startup_timeout_sec = 60
+
+[mcp_servers.scansci-pdf]
+command = "${ROOT}/.local/servers/scansci-pdf/Scripts/scansci-pdf.exe"
+args = ["run"]
+startup_timeout_sec = 60
+tool_timeout_sec = 600
+
+[mcp_servers.scansci-pdf.env]
+PYTHONUTF8 = "1"
+CLOAKBROWSER_CACHE_DIR = "${ROOT}/.local/browsers/cloakbrowser"
+SCANSCI_PDF_DATA_DIR = "${ROOT}/.local/data/scansci-pdf"
+
+[mcp_servers.instsci]
+command = "${ROOT}/.local/servers/instsci/Scripts/instsci-mcp.exe"
+args = []
+startup_timeout_sec = 60
+tool_timeout_sec = 600
+
+[mcp_servers.instsci.env]
+PYTHONUTF8 = "1"
+CLOAKBROWSER_CACHE_DIR = "${ROOT}/.local/browsers/cloakbrowser"
+USERPROFILE = "${ROOT}/.local/data/instsci-home"

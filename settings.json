@@ -49,6 +49,26 @@
           "${ROOT}/scripts/patch_semgrep_timeout.py"
         ]
       ]
+    },
+    "scansci-pdf": {
+      "command": "${ROOT}/.local/servers/scansci-pdf/Scripts/scansci-pdf.exe",
+      "install": [
+        [
+          "${PYTHON}",
+          "${ROOT}/scripts/install_paper_mcps.py",
+          "scansci-pdf"
+        ]
+      ]
+    },
+    "instsci": {
+      "command": "${ROOT}/.local/servers/instsci/Scripts/instsci-mcp.exe",
+      "install": [
+        [
+          "${PYTHON}",
+          "${ROOT}/scripts/install_paper_mcps.py",
+          "instsci"
+        ]
+      ]
     }
   }
 }

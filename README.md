@@ -180,3 +180,9 @@ args = ["${ROOT}/servers/demo/server.py"]
 提交修改时，请说明配置或安装行为的变化及验证结果，避免提交凭证、虚拟环境和本机状态文件。
 
 参考：[Codex MCP 配置](https://developers.openai.com/codex/mcp)、[GitHub CLI 私有仓库创建](https://cli.github.com/manual/gh_repo_create)。
+
+## ScanSci PDF 与 InstSci
+
+已加入两个独立 MCP：`scansci-pdf`（1.18.0）和 `instsci`（0.2.0）。源码位于 `.local/sources/`，隔离环境位于 `.local/servers/`；`scripts/install_paper_mcps.py` 固定上游提交并由 setup 的 recipe 调用。InstSci 使用 `mcp>=1.12,<2`，避免其 FastMCP 入口与 SDK 2.x 不兼容。
+
+两个服务的运行数据和浏览器缓存均配置在本仓库 `.local/` 下，不参与 Git 同步。InstSci 的 USERPROFILE 覆盖仅作用于该 MCP 子进程。首次使用机构权限时，在可见浏览器内完成本人机构登录。安装验证覆盖 MCP 握手、工具列表和只读工具调用，不代表机构订阅论文下载已验证。
